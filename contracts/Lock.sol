@@ -2,11 +2,19 @@
 pragma solidity ^0.8.9;
 
 contract Auction {
-    address payable Auctioneer;
-    address[] users;
+    address public Auctioneer;
+    uint256 public HighestBid;
+
+    mapping(address => uint) bidders;
 
     constructor() {
         Auctioneer = payable(msg.sender);
+        HighestBid = 0;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == Auctioneer);
+        _;
     }
 
     modifier AuctioneerCannotBid() {
@@ -14,9 +22,23 @@ contract Auction {
         _;
     }
 
-    function placeBid() public payable AuctioneerCannotBid {
+    function addBidders() public payable AuctioneerCannotBid {
+        uint amount;
+        amount = bidders[msg.sender] + msg.value;
         require(msg.value > 0, "Need more ether");
-        uint HighestBid = 0;
-        if (msg.value > HighestBid) {}
+        bidders[msg.sender] = msg.value;
+        bidders[msg.sender] = amount;
+        if (amount > HighestBid) {
+            HighestBid = amount;
+        }
+    }
+
+    function getBal() public view returns (uint) {
+        return address(this).balance;
+    }
+
+    function with() public payable onlyOwner {
+        address payable to = payable(msg.sender);
+        to.transfer(getBal());
     }
 }
