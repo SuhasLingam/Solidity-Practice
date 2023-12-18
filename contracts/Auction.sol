@@ -3,13 +3,19 @@ pragma solidity ^0.8.9;
 
 contract Auction {
     address public Auctioneer;
-    uint256 public HighestBid;
+    address public highestBidder;
+    uint256 public highestBid;
+    uint256 public endTime;
 
     mapping(address => uint) bidders;
 
-    constructor() {
+    event BidPlaced(address indexed bidder, uint256 amount);
+    event AuctionEnded(address indexed winner, uint256 amount);
+
+    constructor(uint _auctionTime) {
         Auctioneer = payable(msg.sender);
-        HighestBid = 0;
+        highestBid = 0;
+        endTime = block.timestamp + _auctionTime;
     }
 
     modifier onlyOwner() {
@@ -22,23 +28,50 @@ contract Auction {
         _;
     }
 
-    function addBidders() public payable AuctioneerCannotBid {
-        uint amount;
-        amount = bidders[msg.sender] + msg.value;
-        require(msg.value > 0, "Need more ether");
-        bidders[msg.sender] = msg.value;
-        bidders[msg.sender] = amount;
-        if (amount > HighestBid) {
-            HighestBid = amount;
+    modifier onlyBeforeEnd() {
+        require(block.timestamp < endTime, "Auction has already ended");
+        _;
+    }
+
+    modifier onlyAfterEnd() {
+        require(block.timestamp >= endTime, "Auction is still ongoing");
+        _;
+    }
+
+    function placeBid() external payable onlyAfterEnd AuctioneerCannotBid {
+        require(
+            msg.value > highestBid,
+            "Your bid must be higher than the current highest bid"
+        );
+
+        if (highestBidder != address(0)) {
+            payable(highestBidder).transfer(highestBid);
         }
+
+        highestBid = msg.value;
+        highestBidder = msg.sender;
+
+        emit BidPlaced(msg.sender, msg.value);
     }
 
-    function getBal() public view returns (uint) {
-        return address(this).balance;
+    function endAuction() external onlyOwner onlyAfterEnd {
+        require(highestBidder != address(0), "Auction has no winner");
+        payable(Auctioneer).transfer(highestBid);
+        emit AuctionEnded(highestBidder, highestBid);
+        // Reset auction state
+        highestBidder = address(0);
+        highestBid = 0;
     }
 
-    function with() public payable onlyOwner {
-        address payable to = payable(msg.sender);
-        to.transfer(getBal());
+    function getHighestBidder() external view returns (address) {
+        return highestBidder;
+    }
+
+    function getHighestBid() external view returns (uint256) {
+        return highestBid;
+    }
+
+    function getAuctionEndTime() external view returns (uint256) {
+        return endTime;
     }
 }
