@@ -7,6 +7,10 @@ async function main() {
   await auction.waitForDeployment();
 
   console.log("Deployed at : ", await auction.getAddress());
+  const chainId = await hre.ethers.provider
+    .getNetwork()
+    .then((network) => network.chainId);
+  console.log("Chain ID: ", chainId);
 }
 
 main().catch((error) => {
@@ -14,5 +18,5 @@ main().catch((error) => {
   process.exitCode = 1;
 });
 
-//contract address : 0xa9Bfd852a6dfecDD4c06CAD02D7425510e3A37b8
+//contract address : 0x2E6e494A6C2c2703Bfdd22D2458B2bF92C435947
 // endTime: 60
