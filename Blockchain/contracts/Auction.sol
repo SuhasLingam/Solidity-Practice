@@ -7,6 +7,7 @@ contract Auction {
     uint256 public highestBid;
     uint256 public endTime;
 
+
     mapping(address => uint) bidders;
 
     event BidPlaced(address indexed bidder, uint256 amount);
